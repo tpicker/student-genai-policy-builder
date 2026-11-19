@@ -103,6 +103,7 @@
     .actions { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem .75rem; }
     .status { font-size: .9rem; color: var(--muted); }
     .course-note { border-inline-start: 3px solid var(--blue); padding: .66rem .75rem; margin: 0 0 1rem; background: #edf4fc; }
+    .fields > .course-note { margin: 0; }
     .assignment-list { display: grid; gap: .8rem; }
     .assignment { border: 1px solid var(--line); border-radius: .6rem; }
     .assignment summary { cursor: pointer; padding: .7rem .85rem; font-weight: 700; overflow-wrap: anywhere; }
@@ -148,7 +149,7 @@
       </div>
       <section class="card preview" aria-labelledby="course-preview-title">
         <h2 id="course-preview-title">HelioCampus syllabus text</h2>
-        <p class="intro" id="course-hint">Choose a course designation to start.</p>
+        <p class="intro" id="course-hint" role="status">Choose a course designation to start.</p>
         <div class="policy-output" id="course-output" role="region" aria-label="Syllabus preview" aria-describedby="course-hint" tabindex="-1"></div>
         <div class="actions">
           <button class="button primary" id="copy-course" type="button" disabled>Copy syllabus text</button>
@@ -168,7 +169,7 @@
       </div>
       <section class="card preview" aria-labelledby="canvas-preview-title">
         <h2 id="canvas-preview-title">Canvas guidance text</h2>
-        <p class="intro" id="canvas-hint"></p>
+        <p class="intro" id="canvas-hint" role="status"></p>
         <label class="field">Copy destination
           <select id="canvas-destination"></select>
         </label>
@@ -197,7 +198,7 @@
         </label>
         <label class="option yellow">
           <input type="radio" data-field="level" value="yellow">
-          <span><strong>Yellow · Limited use</strong><small class="help">GenAI can support selected tasks while students do the core work and disclose their use.</small></span>
+          <span><strong>Yellow · Limited use</strong><small class="help">GenAI can support selected tasks while students do the core work independently.</small></span>
         </label>
         <label class="option green">
           <input type="radio" data-field="level" value="green">
@@ -209,6 +210,10 @@
 
   <template id="use-fields">
     <div class="fields details" data-branch="selected" hidden>
+      <p class="course-note" data-branch="yellow" hidden>
+        <strong>When your copy preview appears</strong><br>
+        The preview stays blank until you describe permitted use, say what students must do independently, and choose a disclosure option. If disclosure is required, also say what students should submit and where.
+      </p>
       <label class="field" data-branch="permitted">When and how can students use GenAI?
         <span class="help" data-use-help></span>
         <textarea data-field="uses" rows="2"></textarea>
@@ -220,14 +225,17 @@
       <div class="disclosure fields" data-branch="permitted">
         <div>
           <h3>Disclosure</h3>
-          <p class="help" data-disclose-rule hidden>All permitted GenAI use must be disclosed under the Yellow policy.</p>
+          <p class="help" data-branch="ep-disclosure" hidden>
+            Johns Hopkins EP requires disclosure of all permitted GenAI use under its Yellow designation.
+            <a href="https://ep.jhu.edu/faculty-staff/preparing-to-teach/faculty-facing-guidance-on-student-generative-ai-use/" target="_blank" rel="noopener noreferrer">EP faculty guidance</a>
+          </p>
         </div>
         <fieldset data-branch="disclosure-choice" hidden>
-          <legend>Must students disclose GenAI use?</legend>
+          <legend>Choose a disclosure option</legend>
           <div class="radio-row">
-            <label><input type="radio" data-field="disclosure" value="yes"> Yes</label>
-            <label><input type="radio" data-field="disclosure" value="no"> No</label>
-            <label><input type="radio" data-field="disclosure" value="depends"> In some cases</label>
+            <label><input type="radio" data-field="disclosure" value="yes"> Required every time</label>
+            <label><input type="radio" data-field="disclosure" value="depends"> Required in some cases</label>
+            <label><input type="radio" data-field="disclosure" value="no"> No disclosure required</label>
           </div>
         </fieldset>
         <div class="fields" data-branch="report" hidden>
@@ -462,14 +470,10 @@
       return instructions.join('\n');
     }
 
-    function readPolicy(editor, courseLevel) {
-      const level = radio(editor, 'level');
-      const disclosureRequired = level === 'yellow' || (level === 'green' && courseLevel === 'yellow');
-      const disclosure = disclosureRequired ? 'yes' : radio(editor, 'disclosure');
+    function readPolicy(editor) {
       return {
-        level,
-        disclosure,
-        disclosureRequired,
+        level: radio(editor, 'level'),
+        disclosure: radio(editor, 'disclosure'),
         uses: textField(editor, 'uses'),
         limits: textField(editor, 'limits'),
         formats: selectedFormats(editor),
@@ -485,13 +489,15 @@
       return disclosure === 'yes' || disclosure === 'depends';
     }
 
-    function updateBranches(editor, policy) {
-      const { level, disclosure, disclosureRequired, formats } = policy;
+    function updateBranches(editor, policy, courseLevel) {
+      const { level, disclosure, formats } = policy;
       const permitsUse = level === 'yellow' || level === 'green';
       const branches = {
         selected: Boolean(level),
+        yellow: level === 'yellow',
         permitted: permitsUse,
-        'disclosure-choice': permitsUse && !disclosureRequired,
+        'ep-disclosure': permitsUse && (level === 'yellow' || courseLevel === 'yellow'),
+        'disclosure-choice': permitsUse,
         report: permitsUse && requiresInstructions(disclosure),
         when: permitsUse && disclosure === 'depends'
       };
@@ -513,7 +519,6 @@
       field(editor, 'limits').placeholder = 'Example · ' + guidance.limitsExample;
       field(editor, 'why').placeholder = 'Example · ' + guidance.reasonExample;
 
-      editor.querySelector('[data-disclose-rule]').hidden = !disclosureRequired;
       const preset = field(editor, 'submission-preset').value;
       editor.querySelector('[data-apply-submission]').disabled = !submissionSuggestion(preset, formats);
       const custom = formats.includes('custom');
@@ -528,7 +533,7 @@
       if (policy.level === 'red') return '';
       if (!policy.uses) return 'Describe when and how students may use GenAI.';
       if (policy.level === 'yellow' && !policy.limits) return 'Explain what students must do independently.';
-      if (!policy.disclosure) return 'Choose a disclosure requirement.';
+      if (!policy.disclosure) return 'Choose a disclosure option to generate the preview, including “No disclosure required” if it applies.';
       if (policy.disclosure === 'depends' && !policy.when) return 'Say when students must disclose GenAI use.';
       if (requiresInstructions(policy.disclosure)) {
         if (!policy.formats.length) return 'Choose what students should submit for disclosure.';
@@ -549,7 +554,7 @@
         : 'Disclose all GenAI use.';
       const formats = policy.formats.map(format => format === 'custom' ? policy.report : disclosureFormats[format]);
       const extra = policy.formats.includes('custom') ? '' : policy.report;
-      const scope = appliesByDefault ? 'Follow any activity-specific disclosure instructions.' : '';
+      const scope = appliesByDefault ? 'Follow the disclosure instructions for each activity if they differ from this course policy.' : '';
       return [requirement, ...formats, policy.where, extra, scope].filter(Boolean).join(' ');
     }
 
@@ -560,7 +565,7 @@
       if (policy.limits) bullets.push('What you must do independently. ' + policy.limits);
       if (policy.why) bullets.push('Why this policy? ' + policy.why);
       if (policy.level !== 'red') {
-        bullets.push(disclosureText(policy, policy.level === 'green'));
+        bullets.push(disclosureText(policy, true));
         if (policy.level === 'green') bullets.push(accountability);
         if (policy.responsibility) bullets.push(policy.responsibility);
       }
@@ -618,16 +623,18 @@
         plainOutputs.set(target, text);
         status.textContent = '';
       }
-      if (hint.textContent !== message) status.textContent = '';
-      hint.textContent = message;
+      if (hint.textContent !== message) {
+        status.textContent = '';
+        hint.textContent = message;
+      }
       output.tabIndex = text ? 0 : -1;
       byId('copy-' + target).disabled = !text;
     }
 
     function updateCanvas(coursePolicy) {
       const entries = [...assignments.children].map(entry => {
-        const policy = readPolicy(entry, coursePolicy.level);
-        updateBranches(entry, policy);
+        const policy = readPolicy(entry);
+        updateBranches(entry, policy, coursePolicy.level);
         const title = textField(entry, 'title');
         const label = title || 'Untitled assignment or activity';
         const error = title ? missingPolicy(policy) : 'Enter an assignment or activity name.';
