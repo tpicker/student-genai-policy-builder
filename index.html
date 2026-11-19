@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Draft student GenAI guidance for your HelioCampus syllabus and Canvas assignments.">
+  <title>Student GenAI Policy Builder</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy: #112849;
+      --ink: #1a2d44;
+      --blue: #174d89;
+      --muted: #4b5c71;
+      --line: #cfd9e5;
+      --paper: #fff;
+      --background: #f1f5fa;
+      font: 100%/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; background: var(--background); color: var(--ink); }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font: 600 clamp(2.3rem, 5vw, 3.7rem)/1.06 Georgia, serif; letter-spacing: -.034em; }
+    h2 { font-size: 1.38rem; line-height: 1.23; letter-spacing: -.02em; }
+    p + p { margin-top: .7rem; }
+    a { color: var(--blue); text-underline-offset: .2em; }
+    :focus-visible { outline: 3px solid #2265a7; outline-offset: 3px; }
+    .frame { width: min(100% - 2.5rem, 69rem); margin-inline: auto; }
+    .hero { background: var(--navy); color: var(--paper); border-top: 5px solid #64b5e5; }
+    .hero .frame { padding-block: clamp(1.7rem, 4.5vw, 3.6rem); }
+    .hero p { margin-top: .75rem; color: #d7e5f7; max-width: 45rem; }
+    main { padding-block: 1.45rem 1.8rem; }
+    .tabs { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .tab, .button {
+      border: 1px solid var(--line);
+      border-radius: .55rem;
+      padding: .58rem .86rem;
+      background: var(--paper);
+      color: var(--navy);
+      font-weight: 650;
+    }
+    .tab:hover, .button:hover { background: #eaf2fb; }
+    .tab[aria-selected="true"], .primary { border-color: var(--blue); background: var(--blue); color: var(--paper); }
+    .tab[aria-selected="true"]:hover, .primary:not(:disabled):hover { background: #103b6b; }
+    .button:disabled { border-color: var(--line); background: #e9eef4; color: #526278; cursor: default; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr); align-items: start; gap: 1.2rem; }
+    .card { padding: clamp(1rem, 2.6vw, 1.55rem); border: 1px solid var(--line); border-radius: .85rem; background: var(--paper); }
+    .preview { position: sticky; top: 1rem; border-top: 4px solid var(--blue); }
+    .intro, .help { color: var(--muted); }
+    .intro { margin: .45rem 0 1.15rem; }
+    .help { display: block; font-size: .9rem; font-weight: 400; }
+    fieldset { min-inline-size: 0; border: 0; margin: 0; padding: 0; }
+    legend { padding: 0; font-weight: 700; }
+    .options { margin-top: .55rem; display: grid; gap: .45rem; }
+    .option {
+      display: flex; align-items: flex-start; gap: .7rem; padding: .62rem .8rem;
+      border: 1px solid var(--line); border-radius: .55rem; cursor: pointer;
+    }
+    .option.red { border-inline-start: 4px solid #a94150; }
+    .option.yellow { border-inline-start: 4px solid #a96a08; }
+    .option.green { border-inline-start: 4px solid #2c7b61; }
+    .option:hover { background: #f5f8fc; }
+    .option:has(input:checked) { box-shadow: inset 0 0 0 1px var(--blue); background: #eef5ff; }
+    input[type="radio"] { accent-color: var(--blue); flex: none; inline-size: 1.05rem; block-size: 1.05rem; margin: .23rem 0 0; }
+    .option strong, .option small { display: block; }
+    .details { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1rem; }
+    .fields { display: grid; gap: 1rem; }
+    .field { display: grid; gap: .24rem; font-weight: 650; }
+    .check { display: flex; align-items: baseline; gap: .5rem; cursor: pointer; }
+    .check input { accent-color: var(--blue); }
+    .format-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: .3rem .8rem; margin-top: .55rem; }
+    .format-options .check { align-items: flex-start; }
+    .format-options input { flex: none; inline-size: 1rem; block-size: 1rem; margin: .25rem 0 0; }
+    .submission-tools { display: flex; flex-wrap: wrap; align-items: end; gap: .55rem; }
+    .submission-tools .field { flex: 1 1 13rem; }
+    .disclosure { background: #f6f9fd; border: 1px solid var(--line); border-radius: .6rem; padding: .85rem; }
+    .disclosure h3, .course-fields h3 { font-size: 1rem; }
+    .disclosure .help { margin-top: .2rem; }
+    :is(input[type="text"], textarea, select) {
+      display: block; width: 100%; min-width: 0; border: 1px solid #a7b7ca; border-radius: .45rem;
+      color: var(--ink); background: var(--paper); font-weight: 400; padding: .62rem .7rem;
+    }
+    textarea { resize: vertical; min-height: 4.3rem; }
+    textarea::placeholder { color: #566981; opacity: 1; }
+    select {
+      appearance: none; padding-inline-end: 2.15rem;
+      background: linear-gradient(45deg, transparent 50%, var(--blue) 50%) calc(100% - 18px) 50% / 6px 6px no-repeat,
+                  linear-gradient(135deg, var(--blue) 50%, transparent 50%) calc(100% - 12px) 50% / 6px 6px no-repeat var(--paper);
+    }
+    .radio-row { display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; margin-top: .32rem; }
+    .radio-row label { display: inline-flex; align-items: center; gap: .35rem; min-height: 2rem; cursor: pointer; }
+    .radio-row input { margin: 0; }
+    .policy-output {
+      margin-block: .8rem; padding: .8rem; min-height: 14rem; max-height: min(60vh, 30rem); overflow: auto;
+      overflow-wrap: anywhere; border: 1px solid #a7b7ca; border-radius: .45rem; background: #f6f9fd;
+    }
+    .policy-output > * + * { margin-top: .7rem; }
+    .policy-output ul { padding-inline-start: 1.3rem; margin-bottom: 0; }
+    .policy-output li + li { margin-top: .3rem; }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem .75rem; }
+    .status { font-size: .9rem; color: var(--muted); }
+    .course-note { border-inline-start: 3px solid var(--blue); padding: .66rem .75rem; margin: 0 0 1rem; background: #edf4fc; }
+    .assignment-list { display: grid; gap: .8rem; }
+    .assignment { border: 1px solid var(--line); border-radius: .6rem; }
+    .assignment summary { cursor: pointer; padding: .7rem .85rem; font-weight: 700; overflow-wrap: anywhere; }
+    .assignment[open] summary { border-bottom: 1px solid var(--line); background: #f6f9fd; border-radius: .6rem .6rem 0 0; }
+    .assignment-body { padding: .9rem; }
+    .remove { margin-top: .85rem; background: none; border: 0; border-radius: .25rem; color: #8c2b40; padding: .25rem 0; text-decoration: underline; text-underline-offset: .2em; }
+    .add { margin-top: .95rem; }
+    .preview-link { display: none; }
+    footer { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; padding-block: 0 1.7rem; font-size: .9rem; }
+    @media (max-width: 49rem) {
+      .layout { grid-template-columns: 1fr; }
+      .preview { position: static; }
+      .preview-link { display: inline-block; margin-bottom: 1rem; }
+    }
+    @media (max-width: 28rem) {
+      .frame { width: calc(100% - 1.25rem); }
+      .tabs { display: grid; grid-template-columns: 1fr; }
+      .tab { text-align: start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="frame">
+      <h1>Student GenAI Policy Builder</h1>
+      <p>Draft a course policy for HelioCampus and assignment guidance for Canvas.</p>
+    </div>
+  </header>
+
+  <main class="frame">
+    <noscript><p class="card">Enable JavaScript to build and copy your policy.</p></noscript>
+    <div class="tabs" role="tablist" aria-label="Policy section">
+      <button type="button" class="tab" role="tab" id="course-tab" aria-controls="course-panel" aria-selected="true">1. HelioCampus course policy</button>
+      <button type="button" class="tab" role="tab" id="canvas-tab" aria-controls="canvas-panel" aria-selected="false" tabindex="-1">2. Canvas assignment guidance</button>
+    </div>
+
+    <section class="layout" role="tabpanel" id="course-panel" aria-labelledby="course-tab">
+      <div class="card">
+        <h2>Build your course policy</h2>
+        <p class="intro">Choose the designation that fits the skills students should develop and demonstrate in your course.</p>
+        <a class="preview-link" href="#course-preview-title">Jump to syllabus text</a>
+        <div id="course-editor"></div>
+      </div>
+      <section class="card preview" aria-labelledby="course-preview-title">
+        <h2 id="course-preview-title">HelioCampus syllabus text</h2>
+        <p class="intro" id="course-hint">Choose a course designation to start.</p>
+        <div class="policy-output" id="course-output" role="region" aria-label="Syllabus preview" aria-describedby="course-hint" tabindex="-1"></div>
+        <div class="actions">
+          <button class="button primary" id="copy-course" type="button" disabled>Copy syllabus text</button>
+          <span class="status" id="course-status" role="status"></span>
+        </div>
+      </section>
+    </section>
+
+    <section class="layout" role="tabpanel" id="canvas-panel" aria-labelledby="canvas-tab" hidden>
+      <div class="card">
+        <h2>Write assignment guidance</h2>
+        <p class="intro">Create one entry per assignment, activity, or group that shares the same expectations.</p>
+        <a class="preview-link" href="#canvas-preview-title">Jump to Canvas text</a>
+        <p class="course-note" id="canvas-note"></p>
+        <div class="assignment-list" id="assignments"></div>
+        <button type="button" class="button add" id="add-assignment">Add assignment or activity</button>
+      </div>
+      <section class="card preview" aria-labelledby="canvas-preview-title">
+        <h2 id="canvas-preview-title">Canvas guidance text</h2>
+        <p class="intro" id="canvas-hint"></p>
+        <label class="field">Copy destination
+          <select id="canvas-destination"></select>
+        </label>
+        <div class="policy-output" id="canvas-output" role="region" aria-label="Canvas guidance preview" aria-describedby="canvas-hint" tabindex="-1"></div>
+        <div class="actions">
+          <button class="button primary" id="copy-canvas" type="button" disabled>Copy Canvas text</button>
+          <span class="status" id="canvas-status" role="status"></span>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="frame">
+    <a href="https://jhu.instructure.com/courses/134408/modules" target="_blank" rel="noopener noreferrer">Faculty Toolkit in Canvas</a>
+    <a href="https://jhu.instructure.com/courses/134408/pages/student-genai-use-policy-template" target="_blank" rel="noopener noreferrer">Canvas policy template</a>
+    <a href="https://ep.jhu.edu/faculty-staff/preparing-to-teach/faculty-facing-guidance-on-student-generative-ai-use/" target="_blank" rel="noopener noreferrer">EP faculty guidance</a>
+  </footer>
+
+  <template id="policy-options">
+    <fieldset>
+      <legend>GenAI designation</legend>
+      <div class="options">
+        <label class="option red">
+          <input type="radio" data-field="level" value="red">
+          <span><strong>Red · Prohibited</strong><small class="help">Students need to demonstrate the target skills independently.</small></span>
+        </label>
+        <label class="option yellow">
+          <input type="radio" data-field="level" value="yellow">
+          <span><strong>Yellow · Limited use</strong><small class="help">GenAI can support selected tasks while students do the core work and disclose their use.</small></span>
+        </label>
+        <label class="option green">
+          <input type="radio" data-field="level" value="green">
+          <span><strong>Green · Broad use</strong><small class="help">Using GenAI throughout the workflow supports the learning goals or reflects professional practice.</small></span>
+        </label>
+      </div>
+    </fieldset>
+  </template>
+
+  <template id="use-fields">
+    <div class="fields details" data-branch="selected" hidden>
+      <label class="field" data-branch="permitted">When and how can students use GenAI?
+        <span class="help" data-use-help></span>
+        <textarea data-field="uses" rows="2"></textarea>
+      </label>
+      <label class="field">What must students do independently?
+        <span class="help" data-limits-help></span>
+        <textarea data-field="limits" rows="2"></textarea>
+      </label>
+      <div class="disclosure fields" data-branch="permitted">
+        <div>
+          <h3>Disclosure</h3>
+          <p class="help" data-disclose-rule hidden>All permitted GenAI use must be disclosed under the Yellow policy.</p>
+        </div>
+        <fieldset data-branch="disclosure-choice" hidden>
+          <legend>Must students disclose GenAI use?</legend>
+          <div class="radio-row">
+            <label><input type="radio" data-field="disclosure" value="yes"> Yes</label>
+            <label><input type="radio" data-field="disclosure" value="no"> No</label>
+            <label><input type="radio" data-field="disclosure" value="depends"> In some cases</label>
+          </div>
+        </fieldset>
+        <div class="fields" data-branch="report" hidden>
+          <label class="field" data-branch="when" hidden>When is disclosure required?
+            <input type="text" data-field="when" placeholder="Example · When you use AI-generated code.">
+          </label>
+          <fieldset>
+            <legend>What should students submit?</legend>
+            <p class="help">Select every item students should provide when disclosure is required.</p>
+            <div class="format-options">
+              <label class="check"><input type="checkbox" data-field="format" value="acknowledgment"> Tool acknowledgment</label>
+              <label class="check"><input type="checkbox" data-field="format" value="description"> Brief description of use</label>
+              <label class="check"><input type="checkbox" data-field="format" value="citation"> Model and task citation</label>
+              <label class="check"><input type="checkbox" data-field="format" value="marking"> Marked AI-generated content</label>
+              <label class="check"><input type="checkbox" data-field="format" value="excerpt"> Transcript excerpt or summary</label>
+              <label class="check"><input type="checkbox" data-field="format" value="reflection"> Reflection on use and evaluation</label>
+              <label class="check"><input type="checkbox" data-field="format" value="transcript"> Full transcript</label>
+              <label class="check"><input type="checkbox" data-field="format" value="custom"> Custom requirement</label>
+            </div>
+          </fieldset>
+          <div class="submission-tools">
+            <label class="field">Suggested submission locations
+              <select data-field="submission-preset">
+                <option value="matched">Match selected disclosures</option>
+                <option value="note">Note at the end of the submission</option>
+                <option value="inline">Marked within the work</option>
+                <option value="appendix">Appendix to the submission</option>
+                <option value="file">Separate file with the assignment</option>
+                <option value="code">Comments next to the relevant code</option>
+              </select>
+            </label>
+            <button class="button" type="button" data-apply-submission disabled>Use suggestion</button>
+          </div>
+          <label class="field">Where should students submit the disclosure?
+            <span class="help">Edit the suggestion or write your own. If items go in different places, specify where each belongs.</span>
+            <textarea data-field="where" rows="2" placeholder="Example · Put the use note at the end and attach the transcript as an appendix."></textarea>
+          </label>
+          <label class="field"><span data-report-label>Additional disclosure instructions</span>
+            <span class="help" data-report-help></span>
+            <textarea data-field="report" rows="2"></textarea>
+          </label>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="course-details">
+    <div class="fields details course-fields" data-branch="selected" hidden>
+      <h3>Make the policy specific to your course</h3>
+      <label class="field">Why this policy?
+        <span class="help">Recommended. Explain the learning goal, assessment practice, or professional skill this policy supports.</span>
+        <textarea data-field="why" rows="2"></textarea>
+      </label>
+      <label class="field" data-branch="permitted">Responsible use and verification
+        <span class="help">Optional. Explain how to check facts, citations, code, or bias. Include any limits on data students may share with GenAI tools.</span>
+        <textarea data-field="responsibility" rows="2" placeholder="Example · Verify each citation against the original source."></textarea>
+      </label>
+      <label class="field">Unauthorized use
+        <span class="help">Optional. Give a course-specific example of misuse and explain how suspected violations are handled under EP guidance.</span>
+        <textarea data-field="integrity" rows="2" placeholder="Example · Submitting an AI-generated analysis as your own is unauthorized."></textarea>
+      </label>
+      <label class="field">Where can students get help?
+        <span class="help">Optional. Name a contact, office hours, or a help resource. If students must use a specific tool, explain how to access it or request an alternative.</span>
+        <textarea data-field="support" rows="2" placeholder="Example · Message me in Canvas before using a tool you’re unsure about."></textarea>
+      </label>
+      <label class="check">
+        <input type="checkbox" data-field="student-link"> Include the EP student guidance link
+      </label>
+    </div>
+  </template>
+
+  <template id="assignment-template">
+    <details class="assignment">
+      <summary></summary>
+      <div class="assignment-body">
+        <div class="fields">
+          <label class="field">Assignment or activity name
+            <span class="help">Enter a group name if several activities share the same guidance.</span>
+            <input type="text" data-field="title">
+          </label>
+          <div data-policy-fields></div>
+          <div class="fields" data-branch="selected" hidden>
+            <label class="field">Why these expectations?
+              <span class="help">Optional. Explain the skill the assignment assesses and how the GenAI rules support it.</span>
+              <textarea data-field="why" rows="2"></textarea>
+            </label>
+            <label class="field" data-branch="permitted">What should students verify or demonstrate?
+              <span class="help">Optional. Ask for a specific check or evidence of the student’s own judgment.</span>
+              <textarea data-field="responsibility" rows="2" placeholder="Example · Test generated code and explain why you kept or revised it."></textarea>
+            </label>
+          </div>
+        </div>
+        <button type="button" class="remove">Remove this entry</button>
+      </div>
+    </details>
+  </template>
+
+  <script>
+    const levels = {
+      red: {
+        heading: '🚫 Red: GenAI use is not permitted',
+        course: [
+          'GenAI use is prohibited unless I explicitly authorize it in the instructions for a specific activity.',
+          'For work without that permission, complete all drafting, editing, and revision independently.',
+          'Unauthorized GenAI use is an academic integrity violation.'
+        ],
+        assignment: 'GenAI is prohibited for this work. Complete it independently, including drafting, editing, and revision.',
+        reasonExample: 'This policy helps you develop and demonstrate your own mathematical reasoning.',
+        limitsExample: 'Show all derivations and explain each step in your own words.'
+      },
+      yellow: {
+        heading: '⚠️ Yellow: Moderate GenAI use is permitted, with restrictions',
+        course: ['The course default is limited GenAI use. Follow the GenAI label and instructions for each assessment and activity, including any specific permissions or restrictions.'],
+        assignment: 'You may use GenAI only for the purposes described below.',
+        reasonExample: 'GenAI can help you explore ideas while you practice building an evidence-based argument.',
+        limitsExample: 'Write your own analysis and arguments. Do not generate answers or citations with GenAI.',
+        useExample: 'Use GenAI to brainstorm topics and refine the clarity of a draft you wrote.'
+      },
+      green: {
+        heading: '✅ Green: Liberal GenAI use is permitted, with expectations for transparency and accountability',
+        course: ['You may use GenAI throughout your workflow. Activity instructions may set specific limits or disclosure requirements.'],
+        assignment: 'You may use GenAI throughout the workflow, subject to the expectations below.',
+        reasonExample: 'Evaluating and improving GenAI outputs helps you build a skill used in professional practice.',
+        limitsExample: 'Make your own design decisions and explain what you changed after evaluating GenAI output.',
+        useExample: 'Use GenAI to prototype solutions, generate test cases, and compare approaches.'
+      }
+    };
+
+    const disclosureFormats = {
+      acknowledgment: 'Name each GenAI tool you used.',
+      description: 'In one or two sentences, describe how GenAI supported your work.',
+      citation: 'Identify the model and the tasks you used it for.',
+      marking: 'Mark any AI-generated material in your submission and explain what the markings mean.',
+      excerpt: 'Include key prompts and responses or summarize the interactions that influenced your work.',
+      reflection: 'Explain how you used GenAI, which outputs you kept or discarded, and how they influenced your work.',
+      transcript: 'Include the complete prompts and responses from the GenAI interactions you used.'
+    };
+    const submissionPresets = {
+      note: 'Add a GenAI disclosure note at the end of your submission.',
+      inline: 'Identify AI-generated material where it appears in your work.',
+      appendix: 'Include the disclosure in an appendix to your submission.',
+      file: 'Upload the disclosure as a separate file with the assignment.',
+      code: 'Add the disclosure in comments next to the relevant code.'
+    };
+    const disclosureList = new Intl.ListFormat('en', { type: 'conjunction' });
+    const accountability = 'You are responsible for checking the accuracy of AI-generated information, identifying bias, and ensuring the quality of your final work.';
+    const askInstructor = 'If you are unsure whether a use is permitted, ask your instructor before using GenAI.';
+    const studentGuidance = 'https://ep.jhu.edu/student-services/academic-services/academic-policies/student-guidance-on-responsible-generative-ai-use/';
+    const byId = id => document.getElementById(id);
+    const tabs = [...document.querySelectorAll('[role="tab"]')];
+    const course = byId('course-editor');
+    const assignments = byId('assignments');
+    const destination = byId('canvas-destination');
+    const plainOutputs = new Map();
+    let nextAssignment = 1;
+
+    function activateTab(tab) {
+      for (const option of tabs) {
+        const active = option === tab;
+        option.setAttribute('aria-selected', active);
+        option.tabIndex = active ? 0 : -1;
+        byId(option.getAttribute('aria-controls')).hidden = !active;
+      }
+    }
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => activateTab(tab));
+      tab.addEventListener('keydown', event => {
+        const target = { ArrowLeft: 1 - index, ArrowRight: 1 - index, Home: 0, End: 1 }[event.key];
+        if (target === undefined) return;
+        event.preventDefault();
+        activateTab(tabs[target]);
+        tabs[target].focus();
+      });
+    });
+
+    function addPolicyFields(container, group) {
+      container.append(byId('policy-options').content.cloneNode(true), byId('use-fields').content.cloneNode(true));
+      for (const control of container.querySelectorAll('input[type="radio"]')) {
+        control.name = group + '-' + control.dataset.field;
+      }
+      const where = field(container, 'where');
+      let usingMatchedSuggestion = false;
+      container.querySelector('[data-apply-submission]').addEventListener('click', () => {
+        const preset = field(container, 'submission-preset').value;
+        const suggestion = submissionSuggestion(preset, selectedFormats(container));
+        if (!suggestion) return;
+        where.value = suggestion;
+        where.dispatchEvent(new Event('input', { bubbles: true }));
+        usingMatchedSuggestion = preset === 'matched';
+        where.focus();
+      });
+      container.addEventListener('input', event => {
+        if (event.target === where) usingMatchedSuggestion = false;
+        if (usingMatchedSuggestion && event.target.dataset.field === 'format') {
+          where.value = submissionSuggestion('matched', selectedFormats(container));
+        }
+      });
+    }
+
+    function field(editor, name) {
+      return editor.querySelector('[data-field="' + name + '"]');
+    }
+
+    function radio(editor, name) {
+      return editor.querySelector('[data-field="' + name + '"]:checked')?.value || '';
+    }
+
+    function textField(editor, name) {
+      return field(editor, name).value.trim();
+    }
+
+    function selectedFormats(editor) {
+      return Array.from(editor.querySelectorAll('[data-field="format"]:checked'), control => control.value);
+    }
+
+    function submissionSuggestion(preset, formats) {
+      if (preset !== 'matched') return submissionPresets[preset] || '';
+
+      const notes = { acknowledgment: 'the tool acknowledgment', description: 'the brief use description', citation: 'the model and task citation' };
+      const attachments = { excerpt: 'the transcript excerpt or summary', reflection: 'the reflection', transcript: 'the full transcript' };
+      const noteItems = formats.map(format => notes[format]).filter(Boolean);
+      const appendixItems = formats.map(format => attachments[format]).filter(Boolean);
+      const instructions = [];
+      if (formats.includes('marking')) instructions.push(submissionPresets.inline);
+      if (noteItems.length) {
+        instructions.push('Put ' + disclosureList.format(noteItems) + ' in a note at the end of your submission.');
+      }
+      if (appendixItems.length) {
+        instructions.push('Put ' + disclosureList.format(appendixItems) + ' in an appendix to your submission.');
+      }
+      return instructions.join('\n');
+    }
+
+    function readPolicy(editor, courseLevel) {
+      const level = radio(editor, 'level');
+      const disclosureRequired = level === 'yellow' || (level === 'green' && courseLevel === 'yellow');
+      const disclosure = disclosureRequired ? 'yes' : radio(editor, 'disclosure');
+      return {
+        level,
+        disclosure,
+        disclosureRequired,
+        uses: textField(editor, 'uses'),
+        limits: textField(editor, 'limits'),
+        formats: selectedFormats(editor),
+        when: textField(editor, 'when'),
+        where: textField(editor, 'where'),
+        report: textField(editor, 'report'),
+        why: textField(editor, 'why'),
+        responsibility: textField(editor, 'responsibility')
+      };
+    }
+
+    function requiresInstructions(disclosure) {
+      return disclosure === 'yes' || disclosure === 'depends';
+    }
+
+    function updateBranches(editor, policy) {
+      const { level, disclosure, disclosureRequired, formats } = policy;
+      const permitsUse = level === 'yellow' || level === 'green';
+      const branches = {
+        selected: Boolean(level),
+        permitted: permitsUse,
+        'disclosure-choice': permitsUse && !disclosureRequired,
+        report: permitsUse && requiresInstructions(disclosure),
+        when: permitsUse && disclosure === 'depends'
+      };
+      for (const branch of editor.querySelectorAll('[data-branch]')) {
+        branch.hidden = !branches[branch.dataset.branch];
+      }
+      if (!level) return;
+
+      const guidance = levels[level];
+      editor.querySelector('[data-use-help]').textContent = editor === course
+        ? 'Name the tasks or types of assignments where GenAI is allowed. Identify specific tools if they matter.'
+        : 'Name the steps where GenAI is allowed and how students may use it.';
+      editor.querySelector('[data-limits-help]').textContent = level === 'red'
+        ? 'Optional. Name the work students must do themselves. If you want a no-use confirmation, explain what to submit and where.'
+        : level === 'yellow'
+          ? 'Name what students must do themselves and any uses that are off-limits.'
+          : 'Optional. Identify decisions, analysis, or other work students must own.';
+      field(editor, 'uses').placeholder = guidance.useExample ? 'Example · ' + guidance.useExample : '';
+      field(editor, 'limits').placeholder = 'Example · ' + guidance.limitsExample;
+      field(editor, 'why').placeholder = 'Example · ' + guidance.reasonExample;
+
+      editor.querySelector('[data-disclose-rule]').hidden = !disclosureRequired;
+      const preset = field(editor, 'submission-preset').value;
+      editor.querySelector('[data-apply-submission]').disabled = !submissionSuggestion(preset, formats);
+      const custom = formats.includes('custom');
+      editor.querySelector('[data-report-label]').textContent = custom ? 'Describe the custom requirement' : 'Additional disclosure instructions';
+      editor.querySelector('[data-report-help]').textContent = custom
+        ? 'Describe the format and the details students should include.'
+        : 'Optional. Add a citation style, length, file type, or instructions for confirming no use.';
+    }
+
+    function missingPolicy(policy) {
+      if (!policy.level) return 'Choose a GenAI designation.';
+      if (policy.level === 'red') return '';
+      if (!policy.uses) return 'Describe when and how students may use GenAI.';
+      if (policy.level === 'yellow' && !policy.limits) return 'Explain what students must do independently.';
+      if (!policy.disclosure) return 'Choose a disclosure requirement.';
+      if (policy.disclosure === 'depends' && !policy.when) return 'Say when students must disclose GenAI use.';
+      if (requiresInstructions(policy.disclosure)) {
+        if (!policy.formats.length) return 'Choose what students should submit for disclosure.';
+        if (policy.formats.includes('custom') && !policy.report) return 'Describe the custom disclosure requirement.';
+        if (!policy.where) return 'Say where students should submit the disclosure.';
+      }
+      return '';
+    }
+
+    function disclosureText(policy, appliesByDefault = false) {
+      if (policy.disclosure === 'no') {
+        return appliesByDefault
+          ? 'You do not need to disclose GenAI use unless the activity instructions require it.'
+          : 'You do not need to disclose GenAI use.';
+      }
+      const requirement = policy.disclosure === 'depends'
+        ? 'Disclose GenAI use in these situations. ' + policy.when
+        : 'Disclose all GenAI use.';
+      const formats = policy.formats.map(format => format === 'custom' ? policy.report : disclosureFormats[format]);
+      const extra = policy.formats.includes('custom') ? '' : policy.report;
+      const scope = appliesByDefault ? 'Follow any activity-specific disclosure instructions.' : '';
+      return [requirement, ...formats, policy.where, extra, scope].filter(Boolean).join(' ');
+    }
+
+    function courseBlocks(policy) {
+      const level = levels[policy.level];
+      const bullets = [...level.course];
+      if (policy.level !== 'red') bullets.push('Permitted uses. ' + policy.uses);
+      if (policy.limits) bullets.push('What you must do independently. ' + policy.limits);
+      if (policy.why) bullets.push('Why this policy? ' + policy.why);
+      if (policy.level !== 'red') {
+        bullets.push(disclosureText(policy, policy.level === 'green'));
+        if (policy.level === 'green') bullets.push(accountability);
+        if (policy.responsibility) bullets.push(policy.responsibility);
+      }
+      if (policy.integrity) bullets.push(policy.integrity);
+      bullets.push(policy.support || askInstructor);
+      if (policy.includeStudentLink) bullets.push('EP student guidance on responsible GenAI use\n' + studentGuidance);
+      return [['h2', level.heading], ['ul', bullets]];
+    }
+
+    function assignmentBlocks(title, policy) {
+      const level = levels[policy.level];
+      const bullets = ['Can I use GenAI? ' + level.assignment];
+      const permitsUse = policy.level !== 'red';
+      if (permitsUse) bullets.push('How can I use GenAI? ' + policy.uses);
+      if (policy.limits) bullets.push('What must I do independently? ' + policy.limits);
+      if (permitsUse) bullets.push('What do I need to do if I use it? ' + disclosureText(policy));
+      if (policy.why) bullets.push('Why these expectations? ' + policy.why);
+      const responsibilities = permitsUse ? [policy.responsibility] : [];
+      if (policy.level === 'green') responsibilities.push(accountability);
+      const responsibilityText = responsibilities.filter(Boolean).join('\n');
+      if (responsibilityText) bullets.push('Your responsibility: ' + responsibilityText);
+      return [['p', title], ['h2', level.heading], ['ul', bullets]];
+    }
+
+    function appendLines(element, text) {
+      for (const [index, line] of text.split('\n').entries()) {
+        if (index) element.append(document.createElement('br'));
+        element.append(line);
+      }
+    }
+
+    function renderBlock([tag, content]) {
+      const block = document.createElement(tag);
+      if (tag === 'ul') {
+        for (const bullet of content) {
+          const item = document.createElement('li');
+          appendLines(item, bullet);
+          block.append(item);
+        }
+      } else {
+        appendLines(block, content);
+      }
+      return block;
+    }
+
+    function updateOutput(target, message, blocks = []) {
+      const output = byId(target + '-output');
+      const hint = byId(target + '-hint');
+      const status = byId(target + '-status');
+      const text = blocks.map(([tag, content]) =>
+        tag === 'ul' ? content.map(line => '• ' + line).join('\n') : content
+      ).join('\n\n');
+      if (plainOutputs.get(target) !== text) {
+        output.replaceChildren(...blocks.map(renderBlock));
+        plainOutputs.set(target, text);
+        status.textContent = '';
+      }
+      if (hint.textContent !== message) status.textContent = '';
+      hint.textContent = message;
+      output.tabIndex = text ? 0 : -1;
+      byId('copy-' + target).disabled = !text;
+    }
+
+    function updateCanvas(coursePolicy) {
+      const entries = [...assignments.children].map(entry => {
+        const policy = readPolicy(entry, coursePolicy.level);
+        updateBranches(entry, policy);
+        const title = textField(entry, 'title');
+        const label = title || 'Untitled assignment or activity';
+        const error = title ? missingPolicy(policy) : 'Enter an assignment or activity name.';
+        return {
+          id: entry.dataset.id,
+          label,
+          error,
+          blocks: error ? [] : assignmentBlocks(title, policy)
+        };
+      });
+
+      const selected = destination.value;
+      const options = [new Option('Shared Canvas guidance page', 'shared')];
+      for (const entry of entries) options.push(new Option(entry.label, entry.id));
+      const current = [...destination.options];
+      const changed = current.length !== options.length || options.some((option, index) =>
+        option.value !== current[index]?.value || option.text !== current[index]?.text
+      );
+      if (changed) {
+        destination.replaceChildren(...options);
+        destination.value = options.some(option => option.value === selected) ? selected : 'shared';
+      }
+
+      const notes = {
+        red: 'Add assignment-level guidance wherever students would benefit from clarification.',
+        yellow: 'Put a GenAI label and guidance on every assessment and activity. If you use a shared page, keep the label in each activity and link to the details.',
+        green: 'Add assignment-level guidance wherever students would benefit from clarification.'
+      };
+      byId('canvas-note').textContent = notes[coursePolicy.level] || 'You can start an assignment now. Choose a course designation to include it on the shared Canvas page.';
+      const currentEntry = entries.find(entry => entry.id === destination.value);
+
+      if (currentEntry) {
+        const blocks = currentEntry.error ? [] : [...currentEntry.blocks, ['p', askInstructor]];
+        updateOutput('canvas', currentEntry.error || 'Paste into the Canvas assignment or activity instructions.', blocks);
+        return;
+      }
+
+      const incomplete = entries.find(entry => entry.error);
+      if (!entries.length) {
+        updateOutput('canvas', 'Add an assignment or activity to build your Canvas text.');
+      } else if (!coursePolicy.level) {
+        updateOutput('canvas', 'Choose a course designation to copy a shared guidance page.');
+      } else if (incomplete) {
+        updateOutput('canvas', incomplete.label + ' — ' + incomplete.error);
+      } else {
+        const blocks = [
+          ['p', 'Course designation'],
+          ['h2', levels[coursePolicy.level].heading],
+          ['p', 'Before you begin, review the GenAI designation and expectations for your assessment or activity below.'],
+          ...entries.flatMap(entry => entry.blocks),
+          ['p', askInstructor]
+        ];
+        updateOutput('canvas', 'Paste into a Canvas page and link to it from the relevant assignments.', blocks);
+      }
+    }
+
+    function update() {
+      const coursePolicy = {
+        ...readPolicy(course),
+        integrity: textField(course, 'integrity'),
+        support: textField(course, 'support'),
+        includeStudentLink: field(course, 'student-link').checked
+      };
+      updateBranches(course, coursePolicy);
+      const error = missingPolicy(coursePolicy);
+      updateOutput('course', error || 'Paste into the Student Generative AI (GenAI) Use field of your HelioCampus syllabus.', error ? [] : courseBlocks(coursePolicy));
+      updateCanvas(coursePolicy);
+    }
+
+    function addAssignment() {
+      const entry = byId('assignment-template').content.firstElementChild.cloneNode(true);
+      const id = String(nextAssignment++);
+      entry.dataset.id = id;
+      const editor = entry.querySelector('[data-policy-fields]');
+      addPolicyFields(editor, 'assignment-' + id);
+      const title = field(entry, 'title');
+      const summary = entry.querySelector('summary');
+      const remove = entry.querySelector('.remove');
+
+      function updateEntry() {
+        const name = title.value.trim();
+        const level = radio(entry, 'level');
+        const designation = level ? ' · ' + level[0].toUpperCase() + level.slice(1) : '';
+        summary.textContent = (name || 'Untitled assignment or activity') + designation;
+        remove.setAttribute('aria-label', 'Remove ' + (name || 'untitled assignment or activity'));
+        update();
+      }
+
+      entry.addEventListener('input', updateEntry);
+      remove.addEventListener('click', () => {
+        const filled = [...entry.querySelectorAll('input, textarea')].some(control =>
+          control.type === 'radio' || control.type === 'checkbox' ? control.checked : control.value.trim()
+        );
+        if (filled && !window.confirm('Remove this assignment guidance?')) return;
+        entry.remove();
+        update();
+        byId('add-assignment').focus();
+      });
+      for (const row of assignments.children) row.open = false;
+      entry.open = true;
+      assignments.append(entry);
+      updateEntry();
+      title.focus();
+    }
+
+    async function copyOutput(target) {
+      const output = byId(target + '-output');
+      const status = byId(target + '-status');
+      const text = plainOutputs.get(target);
+      if (!text) return;
+      try {
+        if (!navigator.clipboard?.write || typeof ClipboardItem !== 'function') throw new Error('Clipboard unavailable');
+        await navigator.clipboard.write([new ClipboardItem({
+          'text/html': new Blob([output.innerHTML], { type: 'text/html' }),
+          'text/plain': new Blob([text], { type: 'text/plain' })
+        })]);
+        if (plainOutputs.get(target) === text) status.textContent = 'Copied.';
+      } catch {
+        if (plainOutputs.get(target) !== text) return;
+        output.focus();
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(output);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        let copied = false;
+        try { copied = document.execCommand('copy'); } catch {}
+        status.textContent = copied ? 'Copied.' : 'Text selected. Use your device’s Copy command.';
+      }
+    }
+
+    addPolicyFields(course, 'course');
+    course.append(byId('course-details').content.cloneNode(true));
+    course.addEventListener('input', update);
+    destination.addEventListener('change', update);
+    byId('add-assignment').addEventListener('click', addAssignment);
+    byId('copy-course').addEventListener('click', () => copyOutput('course'));
+    byId('copy-canvas').addEventListener('click', () => copyOutput('canvas'));
+    update();
+  </script>
+</body>
+</html>
